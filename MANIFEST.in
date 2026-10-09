@@ -1,0 +1,7 @@
+include .gitignore LICENSE pyproject.toml README*.md CHANGELOG.md CONTRIBUTING.md SECURITY.md SECURITY_REVIEW.md NOTICE.md RELEASE_ALLOWLIST.json
+include coordinator.py demo.py reviewer_test.py reviewer_continuity_test.py review_recovery_test.py verify_backup.py package_release.py validate_release.py scan_public_release.py verify_install.py release_files.py release_gate.py
+recursive-include docs *.md *.yml
+recursive-include examples *.py
+recursive-include tests *.py
+exclude *.db *.db-* *.sqlite* *.log
+prune runtime

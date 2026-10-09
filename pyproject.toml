@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-browser-coordinator"
+version = "0.3.4"
+description = "Cooperative ownership and safe handoff for agents sharing a browser UI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Agent Browser Coordinator contributors"}]
+keywords = ["agents", "browser", "coordination", "sqlite", "handoff"]
+classifiers = ["Programming Language :: Python :: 3", "Operating System :: POSIX", "Topic :: Software Development :: Libraries :: Python Modules"]
+dependencies = []
+
+[project.scripts]
+agent-browser-coordinator = "agent_browser_coordinator.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

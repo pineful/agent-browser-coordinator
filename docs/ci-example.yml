@@ -1,0 +1,24 @@
+# Reference workflow; not active in this release.
+# A maintainer may review and move this to .github/workflows/ci.yml.
+name: synthetic-tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.10', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install --upgrade 'setuptools>=77.0.3' wheel
+      - run: mkdir -p -m 700 dist
+      - run: python release_gate.py --output-dir dist/ci-reviewed
