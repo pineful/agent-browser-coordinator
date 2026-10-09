@@ -1,5 +1,12 @@
 # Changelog
 
+## Repository documentation update after 0.3.4
+
+- Make Korean the default README and move the English introduction to README.en.md.
+- Keep the Korean compatibility link and Japanese README, with checked language navigation.
+- Add agent installation and separately scoped integration prompt samples in Korean, English, and Japanese.
+- Preserve the reviewed 0.3.4 tag and release assets; this documentation update does not change runtime code.
+
 ## 0.3.4 — first public package, with pre-release security hardening
 
 - Refuse overwriting existing dashboards, release archives and checksums; create new private files instead.

@@ -1,6 +1,6 @@
 # Agent Browser Coordinator
 
-[English](README.md) · [한국어](README.ko.md) · [日本語](README.ja.md)
+[한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md)
 
 共有ブラウザー UI を使うエージェントの順番を調整する協調型ツールです。
 
@@ -19,6 +19,7 @@
 ## はじめに
 
 - [インストール](docs/ja/INSTALL.md)
+- [エージェント用インストールプロンプト](docs/ja/AGENT_INSTALL_PROMPTS.md)
 - [共有リソースの設定](docs/ja/CONFIGURATION.md)
 - [CLI と Python の使用例](docs/ja/USAGE.md)
 - [引き継ぎと復旧](docs/ja/RECOVERY.md)

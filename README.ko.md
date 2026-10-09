@@ -1,6 +1,6 @@
 # Agent Browser Coordinator
 
-[English](README.md) · [한국어](README.ko.md) · [日本語](README.ja.md)
+[한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md)
 
 여러 에이전트의 공유 브라우저 사용 순서를 조정하는 협력형 도구입니다.
 
@@ -12,13 +12,14 @@
 
 ## 포함된 기능
 
-**0.3.4**은 Python 라이브러리와 CLI입니다. 로컬 SQLite DB 하나, 원자적 점유, 우선순위와 대기시간 반영, 고유 요청 ID, 세대별 토큰, begin/end, 탭 보존 기록, 검증 후 복구를 제공합니다. 외부 런타임 패키지는 필요 없습니다. 모든 도구 래퍼가 절차에 참여해야 하며 직접 호출까지 강제로 차단하지 않습니다.
+**0.3.4**는 Python 라이브러리와 CLI입니다. 로컬 SQLite DB 하나, 원자적 점유, 우선순위와 대기시간 반영, 고유 요청 ID, 세대별 토큰, begin/end, 탭 보존 기록, 검증 후 복구를 제공합니다. 외부 런타임 패키지는 필요 없습니다. 모든 도구 래퍼가 절차에 참여해야 하며 직접 호출까지 강제로 차단하지 않습니다.
 
 브라우저 드라이버·로그인·서비스 계정·daemon·자동 작업자 메시지·실제 운영 상태는 포함하지 않습니다. 실험 중인 v0.4의 점유자 문의/keepalive는 **이번 배포에 포함하거나 활성화하지 않습니다**. 호스트의 작업 수명과 timeout 연동 검증이 남아 있습니다.
 
 ## 시작하기
 
 - [설치](docs/ko/INSTALL.md)
+- [에이전트 설치 프롬프트 예제](docs/ko/AGENT_INSTALL_PROMPTS.md)
 - [공통 자원 설정](docs/ko/CONFIGURATION.md)
 - [CLI와 Python 사용 예제](docs/ko/USAGE.md)
 - [양도와 복구](docs/ko/RECOVERY.md)
