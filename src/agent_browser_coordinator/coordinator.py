@@ -6,6 +6,7 @@ from pathlib import Path
 VERSION = "0.3.5"
 MAX_CONTINUOUS_HOLD = 1800
 MAX_QUEUE_WAIT = 120
+DEFAULT_TIME_SLICE = 180
 REJECTION_HISTORY = 2000
 
 class Conflict(Exception): pass
@@ -34,8 +35,8 @@ def strict_json(text):
     return json.loads(text,parse_constant=_reject_constant,parse_float=_finite_float,object_pairs_hook=_unique_object)
 
 ARGUMENTS = {
-    'acquire': {'priority','lease'}, 'heartbeat': {'token'},
-    'begin': {'token','action'}, 'end': {'token','action'},
+    'acquire': {'priority','lease'}, 'heartbeat': {'token'}, 'readiness': {'state'},
+    'begin': {'token','action','kind'}, 'end': {'token','action'},
     'inventory': {'token','complete'}, 'tab': {'token','tab','state','unsaved'},
     'close-begin': {'token','tab','action'}, 'close-end': {'token','action','closed'},
     'yield': {'token','safe','checkpoint','no_pending_ui'},
@@ -104,9 +105,11 @@ class Coordinator:
         if self._checked_db_path()!=expected:
             raise Conflict('Database identity changed; stop and inspect offline')
 
-    def initialize(self, resource, confirmed_idle=False):
+    def initialize(self, resource, confirmed_idle=False, time_slice_seconds=DEFAULT_TIME_SLICE):
         label(resource)
         if confirmed_idle is not True: raise Conflict('Initial activation requires externally verified idle resource')
+        if type(time_slice_seconds)!=int or not 30<=time_slice_seconds<=1800:
+            raise Conflict('time_slice_seconds must be an integer 30..1800 seconds')
         now=self._now();self._checked_db_path(require_exists=False)
         fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY|getattr(os,'O_NOFOLLOW',0),0o600)
         c=None
@@ -129,6 +132,7 @@ class Coordinator:
                 self._validate(s)
                 c.execute('INSERT INTO state VALUES(1,?)',(json.dumps(s,allow_nan=False),))
                 self._ensure_auxiliary(c)
+                c.execute('UPDATE policy SET time_slice_seconds=? WHERE id=1',(time_slice_seconds,))
         finally:
             if c is not None:c.close()
             os.close(fd)
@@ -164,23 +168,43 @@ class Coordinator:
         if 'scope' not in {r[1] for r in c.execute('PRAGMA table_info(diagnostics)')}: c.execute("ALTER TABLE diagnostics ADD COLUMN scope TEXT NOT NULL DEFAULT 'inventory-ax-screenshot'")
         c.execute('CREATE TABLE IF NOT EXISTS uncertain_actions(action TEXT PRIMARY KEY, actor TEXT NOT NULL, recorded_at REAL NOT NULL, outcome TEXT NOT NULL)')
         c.execute('CREATE TABLE IF NOT EXISTS manual_reconciliations(action TEXT PRIMARY KEY, actor TEXT NOT NULL, at REAL NOT NULL, user_ref TEXT NOT NULL, user_at REAL NOT NULL, observation TEXT NOT NULL, result_ref TEXT NOT NULL, original_outcome TEXT NOT NULL, resolution TEXT NOT NULL)')
+        c.execute('CREATE TABLE IF NOT EXISTS policy(id INTEGER PRIMARY KEY CHECK(id=1), time_slice_seconds INTEGER NOT NULL)')
+        c.execute('INSERT OR IGNORE INTO policy VALUES(1,?)',(DEFAULT_TIME_SLICE,))
+        c.execute('CREATE TABLE IF NOT EXISTS liveness(token TEXT PRIMARY KEY, seen_at REAL NOT NULL)')
+        c.execute("CREATE TABLE IF NOT EXISTS work_readiness(actor TEXT PRIMARY KEY, state TEXT NOT NULL CHECK(state IN ('preparing','ready')), updated_at REAL NOT NULL)")
+        c.execute("CREATE TABLE IF NOT EXISTS action_kinds(action TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK(kind IN ('observation','work')))")
+        c.execute('CREATE TABLE IF NOT EXISTS grant_service(token TEXT PRIMARY KEY, completed_work INTEGER NOT NULL)')
+
+    @staticmethod
+    def _ready_queue(c,s):
+        if not c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='work_readiness'").fetchone(): return s['queue']
+        states=dict(c.execute('SELECT actor,state FROM work_readiness'))
+        if any(state not in ('preparing','ready') for state in states.values()): raise Conflict('Invalid readiness state; verified recovery required')
+        return [q for q in s['queue'] if states.get(q['actor'],'ready')=='ready']
+
+    @staticmethod
+    def _time_slice(c):
+        if not c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='policy'").fetchone(): return DEFAULT_TIME_SLICE
+        row=c.execute('SELECT time_slice_seconds FROM policy WHERE id=1').fetchone()
+        if not row or type(row[0])!=int or not 30<=row[0]<=1800: raise Conflict('Invalid time slice policy; verified recovery required')
+        return row[0]
 
     @staticmethod
     def _error_code(error):
         msg=str(error)
-        for prefix,code in [('Lease expired','LEASE_EXPIRED'),('Expired lease','EXPIRED_RETURN_ACK_REQUIRED'),('Maximum hold','MAX_HOLD_REACHED'),('Higher priority waiter','YIELD_REQUIRED'),('Action in flight','ACTION_IN_FLIGHT'),('Coordinator frozen','FROZEN'),('Stale','STALE_TOKEN'),('State changed','RECOVERY_REVISION_CHANGED'),('Unknown hold','HOLD_ORIGIN_UNKNOWN')]:
+        for prefix,code in [('Lease expired','LEASE_EXPIRED'),('Expired lease','EXPIRED_RETURN_ACK_REQUIRED'),('Maximum hold','MAX_HOLD_REACHED'),('Higher priority waiter','YIELD_REQUIRED'),('Time slice','YIELD_REQUIRED'),('Action in flight','ACTION_IN_FLIGHT'),('Coordinator frozen','FROZEN'),('Stale','STALE_TOKEN'),('State changed','RECOVERY_REVISION_CHANGED'),('Unknown hold','HOLD_ORIGIN_UNKNOWN')]:
             if msg.startswith(prefix): return code
         return 'COORDINATOR_REJECTED'
 
     def _audit_rejection(self, op, actor, code):
         # No payload, URL, exception text, or tool result is persisted here.
-        operations={'acquire','heartbeat','begin','end','yield','release','cancel','freeze','recover','tab','inventory','close-begin','close-end','shutdown-prepare','shutdown-start','shutdown-end','diagnose-authorize','diagnose-begin','diagnose-end','manual-reconcile'}
+        operations={'acquire','heartbeat','readiness','begin','end','yield','release','cancel','freeze','recover','tab','inventory','close-begin','close-end','shutdown-prepare','shutdown-start','shutdown-end','diagnose-authorize','diagnose-begin','diagnose-end','manual-reconcile'}
         try:
             actor=label(actor)
         except Conflict: actor='invalid-actor'
         try:
             identity=self._checked_db_path(); now=self._now()
-            c=sqlite3.connect(Path(self.path).as_uri()+'?mode=rw',uri=True,timeout=1)
+            c=sqlite3.connect(Path(self.path).as_uri()+'?mode=rw',uri=True,timeout=10)
             try:
                 self._same_db(identity)
                 c.execute('BEGIN IMMEDIATE')
@@ -214,23 +238,31 @@ class Coordinator:
                     return deadline
         raise Conflict('Unknown hold origin; voluntarily release or use verified recovery')
 
-    def _should_yield(self,s,now,allow_first_action=False):
+    def _should_yield(self,c,s,now,allow_first_action=False):
         o=s['owner']
-        return bool(o and (not allow_first_action or o['action_count']) and s['queue'] and
-                    (any(now-q['enqueued']>=MAX_QUEUE_WAIT for q in s['queue']) or
-                     max(self._rank(q,now)[0] for q in s['queue'])>o['dispatch_priority']))
+        ready=self._ready_queue(c,s)
+        # A resumed worker gets at most two calls to complete one useful work
+        # action after a fresh observation. Work must be explicitly marked;
+        # an observation alone does not consume the useful-service chance.
+        service_table=c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='grant_service'").fetchone()
+        completed=c.execute('SELECT completed_work FROM grant_service WHERE token=?',(o['token'],)).fetchone() if o and service_table else None
+        service_floor = bool(o and o['checkpoint'] and o['action_count'] < 2 and not (completed and completed[0]))
+        return bool(o and not service_floor and (not allow_first_action or o['action_count']) and ready and
+                    (any(now-q['enqueued']>=MAX_QUEUE_WAIT for q in ready) or
+                     max(self._rank(q,now)[0] for q in ready)>o['dispatch_priority'] or
+                     any(now-q['enqueued']>=self._time_slice(c) for q in ready)))
 
     def _allow_new_action(self,c,s,now,allow_first_action=False):
         if s['frozen']: raise Conflict('Coordinator frozen')
         if now>=self._hold_deadline(c,s['owner']): raise Conflict('Maximum hold reached: checkpoint and yield or release')
-        if self._should_yield(s,now,allow_first_action): raise Conflict('Higher priority waiter or maximum wait reached: checkpoint and yield')
+        if self._should_yield(c,s,now,allow_first_action): raise Conflict('Time slice or waiter priority requires checkpoint and yield')
 
     def _renew_for_progress(self,c,s,now):
         # Only explicit current-owner progress; never a timer or observer renewal.
         # A matched end may renew after a long, now-completed call, but not if
         # fairness, freeze, or the bounded continuous-hold budget requires handoff.
         limit=self._hold_deadline(c,s['owner'])
-        if not s['frozen'] and now<limit and not self._should_yield(s,now):
+        if not s['frozen'] and now<limit and not self._should_yield(c,s,now):
             s['owner']['deadline']=min(now+s['owner']['lease'],limit)
 
     @staticmethod
@@ -279,13 +311,21 @@ class Coordinator:
             s['clock_regressed'] = now < s['last_time']
             s['events'] = [dict(seq=r[0],at=r[1],kind=r[2],actor=r[3]) for r in c.execute('SELECT * FROM events ORDER BY seq DESC LIMIT 50')]
             s['shutdown_blockers'] = (["owner"] if s['owner'] else []) + (["queue"] if s['queue'] else []) + (["retained_tabs"] if s['tabs'] else []) + (["active_action"] if s['active'] else []) + ([] if s['inventory_complete'] else ["unknown_tabs"])
-            s['policy'] = dict(max_continuous_hold_seconds=MAX_CONTINUOUS_HOLD,max_queue_wait_seconds=MAX_QUEUE_WAIT,auto_steal=False)
+            s['policy'] = dict(max_continuous_hold_seconds=MAX_CONTINUOUS_HOLD,max_queue_wait_seconds=MAX_QUEUE_WAIT,time_slice_seconds=self._time_slice(c),auto_steal=False)
             s['hold_deadline'] = self._hold_deadline(c,s['owner'],create=False) if s['owner'] else None
-            s['yield_required'] = bool(s['owner'] and (now>=s['hold_deadline'] or self._should_yield(s,now)))
+            s['yield_required'] = bool(s['owner'] and (now>=s['hold_deadline'] or self._should_yield(c,s,now,allow_first_action=True)))
+            liveness=c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='liveness'").fetchone()
+            s['last_keep_alive_at']=c.execute('SELECT seen_at FROM liveness WHERE token=?',(s['owner']['token'],)).fetchone()[0] if s['owner'] and liveness and c.execute('SELECT 1 FROM liveness WHERE token=?',(s['owner']['token'],)).fetchone() else None
             s['first_action_available'] = bool(s['owner'] and not s['owner']['action_count'] and not s['expired'] and not s['frozen'] and now<s['hold_deadline'])
             s['recovery_required'] = bool(s['owner'] and s['expired'])
             s['recovery_route'] = ('wait_for_inflight_then_owner_ack_or_operator' if s['active'] else 'current_owner_confirmed_return_or_operator') if s['recovery_required'] else None
             s['oldest_wait_seconds'] = max([now-q['enqueued'] for q in s['queue']] or [0])
+            ready=self._ready_queue(c,s)
+            overdue=[q for q in ready if now-q['enqueued']>=MAX_QUEUE_WAIT]
+            next_ready=min(overdue,key=lambda q:(q['enqueued'],q['sequence'])) if overdue else (max(ready,key=lambda q:self._rank(q,now)) if ready else None)
+            s['next_ready_actor']=next_ready['actor'] if next_ready else None
+            s['handoff_ready']=bool(next_ready and s['owner'] and s['active'] is None and s['yield_required'])
+            s['work_readiness']=dict(c.execute('SELECT actor,state FROM work_readiness')) if c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='work_readiness'").fetchone() else {}
             exists=c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='rejections'").fetchone()
             s['recent_rejections'] = [dict(seq=r[0],at=r[1],op=r[2],actor=r[3],code=r[4]) for r in c.execute('SELECT * FROM rejections ORDER BY seq DESC LIMIT 30')] if exists else []
             s['rejection_history_limit'] = REJECTION_HISTORY
@@ -303,7 +343,9 @@ class Coordinator:
     def _rank(self, q, now): return (q['priority'] + (now-q['enqueued'])/30, -q['sequence'])
     def _grant(self, s, now, c, exclude_actor=None):
         if s['owner'] or s['frozen'] or s['shutdown'] or not s['queue']: return
-        candidates=[q for q in s['queue'] if q['actor']!=exclude_actor] or s['queue']
+        ready=self._ready_queue(c,s)
+        candidates=[q for q in ready if q['actor']!=exclude_actor] or ready
+        if not candidates: return
         overdue=[q for q in candidates if now-q['enqueued']>=MAX_QUEUE_WAIT]
         q=min(overdue,key=lambda q:(q['enqueued'],q['sequence'])) if overdue else max(candidates,key=lambda q:self._rank(q,now))
         s['queue'].remove(q)
@@ -311,6 +353,7 @@ class Coordinator:
         q.update(token=f"{s['epoch']}:{s['generation']}", deadline=min(now+q['lease'],now+MAX_CONTINUOUS_HOLD),dispatch_priority=self._rank(q,now)[0],action_count=0)
         s['owner']=q
         c.execute('INSERT INTO grants VALUES(?,?,?)',(q['token'],now,now+MAX_CONTINUOUS_HOLD))
+        c.execute('INSERT INTO grant_service VALUES(?,0)',(q['token'],))
 
     def execute(self, op, request_id, actor, **kw):
         try: return self._execute(op,request_id,actor,**kw)
@@ -349,13 +392,23 @@ class Coordinator:
                 seq=c.execute('SELECT COALESCE(MAX(seq),0)+1 FROM events').fetchone()[0]
                 s['queue'].append(dict(actor=actor,priority=priority,lease=lease,enqueued=now,sequence=seq,checkpoint=None))
                 self._grant(s,now,c)
+            elif op=='readiness':
+                state=kw.get('state')
+                if state not in ('preparing','ready'): raise Conflict('readiness state must be preparing or ready')
+                c.execute('INSERT OR REPLACE INTO work_readiness VALUES(?,?,?)',(actor,state,now))
+                if state=='ready': self._grant(s,now,c)
             elif op=='heartbeat':
-                owner(); self._allow_new_action(c,s,now); self._renew_for_progress(c,s,now)
+                owner(); self._allow_new_action(c,s,now)
+                # A manual keep-alive records worker liveness only. It cannot prove
+                # that an in-flight tool completed or extend the UI lease.
+                c.execute('INSERT OR REPLACE INTO liveness VALUES(?,?)',(kw['token'],now))
             elif op=='begin':
                 o=owner(); quiescent()
                 self._allow_new_action(c,s,now,allow_first_action=True)
                 self._renew_for_progress(c,s,now)
+                if kw.get('kind','work') not in ('observation','work'): raise Conflict('begin kind must be observation or work')
                 c.execute('INSERT INTO actions VALUES(?)',(label(kw['action']),))
+                c.execute('INSERT INTO action_kinds VALUES(?,?)',(kw['action'],kw.get('kind','work')))
                 o['action_count']+=1
                 s['active']=dict(id=kw['action'],actor=actor,started=now)
             elif op=='inventory':
@@ -406,6 +459,8 @@ class Coordinator:
                 owner(True)
                 if c.execute("SELECT 1 FROM uncertain_actions WHERE action=? AND outcome='unknown'",(kw.get('action'),)).fetchone(): raise Conflict('Unresolved original action: diagnostic read does not authorize end')
                 if not s['active'] or s['active']['id']!=kw.get('action') or 'closing_tab' in s['active']: raise Conflict('No matching generic active action')
+                kind=c.execute('SELECT kind FROM action_kinds WHERE action=?',(kw['action'],)).fetchone()
+                if kind is None or kind[0]=='work': c.execute('UPDATE grant_service SET completed_work=completed_work+1 WHERE token=?',(kw['token'],))
                 s['active']=None
                 self._renew_for_progress(c,s,now)
             elif op in ('yield','release'):
@@ -421,9 +476,11 @@ class Coordinator:
                     for t in s['tabs'].values():
                         if t['actor']==actor and t['state']=='working': t['state']='paused'
                 s['owner']=None; self._grant(s,now,c,exclude_actor=actor if op=='yield' else None)
+                if op=='release': c.execute('DELETE FROM work_readiness WHERE actor=?',(actor,))
             elif op=='cancel':
                 before=len(s['queue']); s['queue']=[q for q in s['queue'] if q['actor']!=actor]
                 if before==len(s['queue']): raise Conflict('Actor not queued; owners must release')
+                c.execute('DELETE FROM work_readiness WHERE actor=?',(actor,))
             elif op=='diagnose-authorize':
                 if actor!='coordinator-operator': raise Conflict('Only coordinating operator may authorize diagnostics')
                 if not s['frozen'] or not s['owner'] or not s['active']: raise Conflict('Diagnostic read requires frozen original owner and unresolved action')
@@ -494,7 +551,7 @@ class Coordinator:
 
 def main():
     p=argparse.ArgumentParser(description=__doc__); p.add_argument('--db',required=True)
-    p.add_argument('operation',choices=['init','status','dashboard','acquire','heartbeat','begin','end','yield','release','cancel','freeze','recover','tab','close-begin','close-end','shutdown-prepare','shutdown-start','shutdown-end','inventory','diagnose-authorize','diagnose-begin','diagnose-end','manual-reconcile'])
+    p.add_argument('operation',choices=['init','status','dashboard','acquire','heartbeat','readiness','begin','end','yield','release','cancel','freeze','recover','tab','close-begin','close-end','shutdown-prepare','shutdown-start','shutdown-end','inventory','diagnose-authorize','diagnose-begin','diagnose-end','manual-reconcile'])
     p.add_argument('--actor'); p.add_argument('--request'); p.add_argument('--args',default='{}'); p.add_argument('--output')
     a=p.parse_args(); co=Coordinator(a.db)
     try:

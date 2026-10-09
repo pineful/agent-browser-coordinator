@@ -1,5 +1,15 @@
 # Prompts for asking an agent to install the package
 
+## Operational-readiness addendum to copy into an integration request
+
+```text
+Report three separate milestones: package installation verified; every real browser tool adapter connected to acquire/verify/begin/one call/end; host environment and capability isolation verified. Installation alone does not make you able to control a browser. Identify the host's persistent agent-instruction file and explicitly link this protocol without overwriting existing user instructions. If that file or adapter is inaccessible, report installation only and do not claim operational readiness.
+
+Classify each task before execution. Unknown work, shared screen/keyboard, native file chooser, modal, and any unverified browser UI are exclusive and sequential. File analysis, document preparation, server generation, review and publication waits belong outside UI ownership and may proceed in parallel. A tab_id alone is not isolation evidence. Require tested adapter evidence for independent sessions, focus, input and dialogs before treating a tab API as a parallel candidate. Do not enable parallel browser execution without a host experiment.
+
+Use short UI ownership: acquire, verify fresh owner/token, begin, invoke one bounded tool, end, checkpoint and yield/release at safe boundaries. A waiting worker can require yield at the next begin after the configured time slice; do not interrupt an active invocation. On interruption or restart, inspect current DB, unresolved invocations and actual browser state; acquire a new token before resuming. Keep-alive indicates worker liveness only, not tool completion or lease renewal. There is no automatic heartbeat bridge. Perform a synthetic smoke test, then an authorized read-only real-tool smoke test through the wrapper and show begin/call/end and safe return evidence. If permissions or adapter access are missing, report exactly which milestones remain unverified. Never include credentials or private deployment paths in examples.
+```
+
 Copy a sample into your agent. The first scope is isolated installation and verification. Use the second only after reviewing that result and separately choosing a real integration. The agent and host must support the required capabilities; a prompt does not establish host permissions or prove success.
 
 Fill both hash placeholders with the 64-character values from a trusted SHA256SUMS record for this exact release. Missing values or uncertain provenance must block execution and trigger clarification. A ZIP cannot embed its own final hash in its contents; use the separate release verification record.

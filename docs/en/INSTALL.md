@@ -1,5 +1,7 @@
 # Install
 
+Installation verifies the Python package only. Operational readiness additionally requires connecting every real browser tool adapter, registering the protocol in the host's persistent agent instructions without overwriting user instructions, checking a common DB and current browser state, and verifying isolation capabilities with a real read-only smoke test. Without access to those components, report installation success only. The coordinator does not supply browser control or an automatic heartbeat bridge.
+
 Use Python 3.10+ on a local POSIX filesystem. This release is tested in an isolated Linux environment; it does not certify Windows, network filesystems, or every Python/platform combination. SQLite is supplied by Python. No browser, network port, credentials, or service is configured by installation.
 
 Download or clone this repository, enter its directory, then run:

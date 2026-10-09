@@ -57,7 +57,8 @@ class ContinuityReview(unittest.TestCase):
     def test_idle_ghost_heartbeat_does_not_bypass_two_minute_wait(self):
         a=self.take(priority=100,lease=3600);self.take('b',priority=0)
         self.now+=MAX_QUEUE_WAIT+1
-        self.assertTrue(self.co.status()['yield_required'])
+        self.assertTrue(self.co.status()['first_action_available'])
+        self.assertFalse(self.co.status()['yield_required'])
         with self.assertRaises(Conflict):self.call('heartbeat',token=a['token'])
     def test_heartbeat_cannot_extend_continuous_hold(self):
         a=self.take(lease=3600);limit=self.co.status()['hold_deadline']
@@ -129,7 +130,7 @@ class ContinuityReview(unittest.TestCase):
     def test_audit_failure_cannot_turn_rejection_into_success_or_mutate_owner(self):
         a=self.take();self.now+=61;before=self.raw();real_connect=sqlite3.connect
         def connect(*args,**kwargs):
-            if kwargs.get('timeout')==1:raise sqlite3.OperationalError('fixture audit unavailable')
+            if kwargs.get('timeout')==10:raise sqlite3.OperationalError('fixture audit unavailable')
             return real_connect(*args,**kwargs)
         with patch.object(mod.sqlite3,'connect',side_effect=connect):
             with self.assertRaises(Conflict) as caught:self.call('begin',token=a['token'],action='expired')

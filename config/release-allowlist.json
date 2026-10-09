@@ -46,6 +46,8 @@
   "src/agent_browser_coordinator/__main__.py",
   "src/agent_browser_coordinator/cli.py",
   "src/agent_browser_coordinator/coordinator.py",
+  "src/agent_browser_coordinator/guard.py",
+  "src/agent_browser_coordinator/work_policy.py",
   "tests/__init__.py",
   "tests/reviews/__init__.py",
   "tests/reviews/test_artifact_adversarial.py",
@@ -57,5 +59,6 @@
   "tests/test_diagnostic_observation.py",
   "tests/test_manual_reconcile.py",
   "tests/test_recovery.py",
-  "tests/test_security.py"
+  "tests/test_security.py",
+  "tests/test_time_slice_policy.py"
 ]

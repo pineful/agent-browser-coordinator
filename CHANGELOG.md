@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased local branch after 0.3.5
+
+- Add a persistent configurable waiter time slice (default 180 seconds) checked at the next begin, while preserving the 120-second queue aging, 30-minute continuous ceiling, and in-flight ownership.
+- Separate manual keep-alive liveness from begin/end progress and expose it in status.
+- Add preparing/ready queue states, next-ready and handoff signals, and a bounded two-action service opportunity for resumed workers.
+- Add conservative work classification and a fail-closed guarded adapter callback; no parallel UI engine or automatic heartbeat bridge is enabled.
+- Expand synthetic regressions and Korean, English, and Japanese installation and usage guidance.
+
 ## 0.3.5 — repository hierarchy and reproducible review checks
 
 - Keep the implementation only in src/agent_browser_coordinator; remove the root import shim.

@@ -1,5 +1,9 @@
 # Configure one shared resource
 
+## Cooperative waiter budget
+
+At *new* synthetic initialization, `init --args '{"resource":"shared-ui","confirmed_idle":true,"time_slice_seconds":180}'` sets a persistent 30..1800 second waiter budget. Existing databases receive the compatible 180-second default when their additive policy table is first created by a writer. Do not initialize or migrate a live database merely to change this value. The prior 120-second queue aging and 1800-second continuous hold remain; the earliest applicable boundary wins. A waiter only requests handoff at the next begin. An in-flight call keeps its owner until matching end, and empty/cancelled queues do not rotate ownership. All participants must use the same upgraded code and physical SQLite database.
+
 Choose one resource boundary: for example, the desktop browser whose focus, keyboard, mouse and native dialogs are shared. All participating workers must use the **same physical local SQLite DB**, not copies or matching-looking paths in separate containers. Verify read/write visibility across workers before activation. Do not place it on NFS, a cloud-sync folder, or a network drive.
 
 ```sh

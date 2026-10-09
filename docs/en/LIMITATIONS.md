@@ -1,5 +1,7 @@
 # Limits and future work
 
+The time slice is a cooperative next-begin request when a waiter exists. It is not a hard timeout; an in-flight or uncertain call retains ownership until a confirmed result or verified recovery. A keep-alive is only a manual liveness record and does not prove progress or renew a lease. `classify_work` cannot attest adapter claims; its parallel-candidate result does not enable parallel UI execution. Direct tool calls outside participating wrappers are not blocked.
+
 - Cooperation is required. The library cannot block direct browser calls, authenticate actor strings, enforce a read-only browser scope, or cancel an external invocation.
 - One physical local SQLite DB represents one shared resource. Copies, separate containers' same-looking paths, NFS and multiple arbiters are outside the supported model.
 - There is no background daemon, exact-time scheduler, messaging service, automatic owner inquiry, or automatic timeout takeover in stable 0.3.5. Lease expiry does not mean a call ended. Task content progress is not a generic proof of liveness.

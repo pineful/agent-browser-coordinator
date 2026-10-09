@@ -1,5 +1,7 @@
 # Agent Browser Coordinator
 
+> This development branch checks a configurable cooperative waiter time slice (180 seconds by default) at the next begin boundary. It never stops or steals an in-flight call. Keep-alive records worker liveness, not lease renewal or tool progress. File analysis and generation waits run outside UI ownership. Unknown or shared UI stays sequential; verified tab APIs are planning candidates only, with no parallel UI engine enabled.
+
 [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md)
 
 Cooperative ordering for agents that share a browser UI.
