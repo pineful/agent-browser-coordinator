@@ -1,5 +1,7 @@
 # Agent Browser Coordinator
 
+> Scheduling update in this local development branch: shared UI calls use a configurable cooperative waiter time slice (default 180 seconds), checked at the next begin boundary. Ongoing calls are never stopped or stolen. Keep-alive reports worker liveness only; it does not renew a lease or prove tool progress. File analysis and generation waits belong outside UI ownership. Unknown/shared UI remains sequential; verified tab API capabilities are planning candidates only, with no parallel UI engine enabled.
+
 [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md)
 
 여러 에이전트의 공유 브라우저 사용 순서를 조정하는 협력형 도구입니다.

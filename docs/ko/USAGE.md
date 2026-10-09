@@ -1,5 +1,17 @@
 # 모든 실제 호출 앞뒤에 점유 절차 적용
 
+## 짧은 점유와 작업 분류
+
+어댑터는 `agent_browser_coordinator.guard.run_guarded`를 사용해 begin의 성공·비재생 응답과 actor/token/action 일치를 확인한 뒤에만 콜백을 실행할 수 있습니다. 콜백은 `(terminated, value)`를 반환합니다. 예외나 종료 불명은 active action을 진단용으로 남깁니다. 참여 래퍼의 `YIELD_REQUIRED` 뒤 도구 호출을 막지만 래퍼 밖 직접 호출은 막지 못합니다. 새 화면 확인은 `kind='observation'`, 유용한 작업 호출은 `kind='work'`(기본값)로 표시합니다. 체크포인트로 재개한 owner는 최대 두 호출 안에서 관찰 뒤 작업 한 번을 마칠 기회를 얻습니다. 관찰 두 번으로 예산을 늘릴 수 없으며 lease 만료와 연속 상한은 그대로 적용됩니다.
+
+UI 밖에서 준비 중이면 작업자는 `readiness --actor worker-a --request ready-001 --args '{"state":"preparing"}'`를 기록하고 준비가 끝나면 `state=ready`로 바꿀 수 있습니다. preparing 대기자는 선정에서 제외됩니다. `status.next_ready_actor`는 기존 FIFO·우선순위·aging에 따라 다음 ready 대기자를 보여주고 `status.handoff_ready`는 현재 owner가 안전 경계에서 체크포인트 후 양보해야 하는 신호입니다. 상태 신호이지 작업자 생성·실행 보장은 아닙니다. 이전 클라이언트의 acquire는 기본 ready입니다.
+
+유한한 UI 호출 한 번에만 acquire → 현재 owner/token 확인 → begin → 도구 호출 → end를 적용하고 안전 경계에서 yield/release합니다. 문서 준비·파일 분석·서버 생성/검수/발행 간격 대기는 점유 밖에서 진행합니다. 재개 시 새 token으로 재획득하고 현재 화면을 다시 확인합니다. 대기자가 있으면 설정 가능한 점유 예산(기본 180초)을 다음 begin에서 검사합니다. 기존 queue aging 120초와 연속 상한 30분도 유지됩니다. 진행 중 호출은 중단·강탈하지 않으며 대기자가 취소되면 불필요한 교대를 피합니다.
+
+`heartbeat`는 수동 작업자 생존 관측만 기록합니다. lease를 갱신하거나 도구의 진행 결과를 증명하지 않습니다. 실행환경 자동 heartbeat bridge는 없습니다. status의 `last_keep_alive_at`, `active`, owner deadline을 구분해 확인하세요.
+
+`classify_work(kind, capability=...)`는 보수적인 계획 힌트입니다. unknown, 공유 화면/키보드, 네이티브 파일 선택창, 모달, 브라우저 UI는 순차 점유합니다. 파일 분석과 서버 생성 대기는 점유 밖에서 병렬 처리할 수 있습니다. `tab_id`만으로 병렬 안전을 주장하지 않습니다. 어댑터 식별자·증거 참조·검증된 capability와 세션/입력/포커스/대화상자 격리 확인이 모두 있어야 탭 API를 병렬 *후보*로 분류합니다. 이 라이브러리는 호스트 증거 검증이나 실제 병렬 브라우저 호출을 실행하지 않습니다.
+
 CLI는 JSON을 반환하며 거절·잘못된 요청에는 종료 코드 2를 반환합니다. `ok`, `replay`, `owner.actor`, `owner.token`, `active`를 읽습니다. 대기 등록은 점유 획득이 아닙니다. 재생된 begin 성공 응답은 실제 도구를 다시 실행할 허가가 아닙니다.
 
 아래를 한꺼번에 실행하지 마세요. acquire의 실제 owner가 worker-a일 때 받은 token으로 `CURRENT_TOKEN`을 바꿉니다. 새 명령의 request ID는 매번 바꾸고 begin의 새 성공·비재생 상태를 확인한 뒤 실제 승인된 도구를 한 번 실행합니다.

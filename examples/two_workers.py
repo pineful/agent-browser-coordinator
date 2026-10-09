@@ -15,25 +15,30 @@ def worker(db, name, start, queued, done):
   call('tab',token=t,tab='normal-tab',state='working',unsaved=False)
   call('inventory',token=t,complete=True)
   call('begin',token=t,action='normal-work'); start.set()
-  assert queued.wait(5); call('end',token=t,action='normal-work')
+  if not queued.wait(5): raise RuntimeError('urgent worker did not queue')
+  call('end',token=t,action='normal-work')
   call('yield',token=t,safe=True,checkpoint='normal-cp')
-  assert done.wait(5)
-  s=c.status(); assert s['owner']['actor']==name; t=s['owner']['token']
-  assert s['tabs']['normal-tab']['state']=='paused'
+  if not done.wait(5): raise RuntimeError('urgent worker did not finish')
+  s=c.status()
+  if s['owner']['actor']!=name: raise RuntimeError('normal worker did not reacquire')
+  t=s['owner']['token']
+  if s['tabs']['normal-tab']['state']!='paused': raise RuntimeError('tab state was not preserved')
   call('tab',token=t,tab='normal-tab',state='complete',unsaved=False)
   call('close-begin',token=t,tab='normal-tab',action='normal-close')
   # A real adapter closes only its mapped tab here. This is a mock success.
   call('close-end',token=t,action='normal-close',closed=True)
   call('release',token=t,safe=True)
  else:
-  assert start.wait(5); call('acquire',priority=100); queued.set()
+  if not start.wait(5): raise RuntimeError('normal worker did not start')
+  call('acquire',priority=100); queued.set()
   deadline=time.monotonic()+5
   while time.monotonic()<deadline:
    s=c.status()
    if s['owner']['actor']==name: break
    time.sleep(.01)
   else: raise RuntimeError('handoff timeout')
-  t=s['owner']['token']; assert 'normal-tab' in s['tabs']
+  t=s['owner']['token']
+  if 'normal-tab' not in s['tabs']: raise RuntimeError('tab was not retained')
   call('begin',token=t,action='urgent-work'); call('end',token=t,action='urgent-work')
   call('release',token=t,safe=True); done.set()
 
@@ -47,7 +52,8 @@ def main():
    p.join(10)
    if p.is_alive(): p.terminate(); p.join(); raise RuntimeError('mock worker stuck')
    if p.exitcode: raise RuntimeError(f'mock worker failed {p.exitcode}')
-  s=c.status(); assert not s['owner'] and not s['queue'] and not s['tabs']
+  s=c.status()
+  if s['owner'] or s['queue'] or s['tabs']: raise RuntimeError('mock state was not cleared')
   r=c.execute('shutdown-prepare','shutdown-1','operator'); t=r['shutdown']['token']
   c.execute('shutdown-start','shutdown-2','operator',token=t)
   c.execute('shutdown-end','shutdown-3','operator',token=t,closed=True)

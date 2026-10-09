@@ -1,5 +1,17 @@
 # 各実呼び出しを所有権の手順で囲む
 
+## 短い占有と作業分類
+
+アダプターは `agent_browser_coordinator.guard.run_guarded` により、新規・非再生の begin 応答と actor/token/action の一致を確認した後だけコールバックを実行できます。コールバックは `(terminated, value)` を返します。例外や終了不明の場合は active action を診断のため残します。参加ラッパーの `YIELD_REQUIRED` 後の呼び出しを防ぎますが、ラッパー外の直接呼び出しは遮断できません。新しい画面の読み取りは `kind='observation'`、有用な作業は `kind='work'`（既定）と指定します。チェックポイントから再開した owner は最大二回の呼び出しの中で観察後に作業一回を完了する機会を得ます。観察二回で予算は延長されず、lease 失効と連続占有上限は維持します。
+
+UI 外で準備中の作業者は `readiness --actor worker-a --request ready-001 --args '{"state":"preparing"}'` を記録し、準備完了時に `state=ready` に変更できます。preparing の待機者は選択から除外されます。`status.next_ready_actor` は従来の FIFO・優先度・aging に従う次の ready 作業者を示し、`status.handoff_ready` は現在の owner が安全な境界でチェックポイント後に譲る信号です。これは状態信号であり、作業者の生成・実行を保証しません。従来クライアントの acquire は既定で ready です。
+
+UI の占有は有限の呼び出し一回に限り、acquire → owner/token 確認 → begin → 一回のツール呼び出し → end の後、安全な境界で yield/release します。文書準備、ファイル分析、サーバー生成、レビュー、公開の待機は UI 占有の外で行います。再開時は新しい token を取得して現在の画面を再確認します。待機者がいる場合、設定可能な時間枠（既定180秒）を次の begin で確認します。既存の queue aging 120秒と連続占有上限30分も維持します。実行中の呼び出しを中断・強奪せず、待機者が取り消された場合は不要な交代を避けます。
+
+`heartbeat` は手動の作業者生存観測のみを記録します。lease を更新せず、ツールの進行結果も証明しません。実行環境の自動 heartbeat bridge はありません。`last_keep_alive_at` と `active`、owner deadline を別々に確認してください。
+
+`classify_work(kind, capability=...)` は保守的な計画ヒントです。不明な作業、共有画面・キーボード、ネイティブのファイル選択、モーダル、ブラウザー UI は逐次占有します。ファイル分析とサーバー生成待機は占有外で並列化できます。`tab_id` だけでは並列安全性を証明できません。アダプター識別子・証拠参照・検証済み capability とセッション/入力/フォーカス/ダイアログの隔離がそろったタブ API のみ並列*候補*です。このライブラリはホストの証拠検証も並列ブラウザー実行も行いません。
+
 CLI は JSON を返し、拒否・不正な要求では終了コード 2 を返します。ok、replay、owner.actor、owner.token、active を確認します。キュー登録は所有権取得ではありません。再生された begin の成功結果は、実ツールを再実行する許可ではありません。
 
 以下を一括実行しないでください。acquire の現在の owner が worker-a の場合だけ、その正確な token で CURRENT_TOKEN を置き換えます。新しい要求 ID を使い、begin が新規成功で replay=false の場合だけ、承認済みの有限なツール呼び出しを一度実行します。

@@ -1,5 +1,17 @@
 # Use ownership around every actual tool call
 
+## Short ownership and work classification
+
+For adapters, `agent_browser_coordinator.guard.run_guarded` checks a fresh, non-replayed begin response with matching actor/token/action before invoking the callback. The callback returns `(terminated, value)`; exceptions and uncertain termination leave the action active for diagnosis. This prevents a participating wrapper from calling its tool after `YIELD_REQUIRED`, but cannot block calls made outside that wrapper. Mark a fresh read `kind='observation'` and a useful call `kind='work'` (the default). A resumed owner with a checkpoint gets at most two calls to finish one work action after observation before waiter aging requests another yield; two observations do not extend this bound. Lease expiry and the continuous hold ceiling still apply.
+
+Workers may mark themselves `readiness --actor worker-a --request ready-001 --args '{"state":"preparing"}'` during off-UI preparation and later use `state=ready`. A preparing queued worker is skipped by dispatch; `status.next_ready_actor` identifies the next ready queued actor under existing FIFO/priority/aging rules, and `status.handoff_ready` signals a safe boundary where an owner should checkpoint and yield. These are status signals, not worker creation or execution guarantees. `acquire` remains ready by default for older clients.
+
+Own the UI only for a bounded invocation: acquire, verify owner/token, begin, call one tool, end, then yield or release at a safe boundary. Document preparation, file analysis, server generation, review and publication waits belong outside UI ownership. Resume with a new token and a fresh UI observation. With a waiter, the configurable time slice (default 180 seconds) is checked at the next begin. Existing 120-second queue aging and 30-minute continuous cap remain. Active calls are never interrupted or reassigned; a cancelled waiter does not force rotation.
+
+`heartbeat` records manual worker liveness only. It neither renews the lease nor proves tool progress. No automatic execution-host heartbeat bridge is included. Read `last_keep_alive_at` separately from `active` and the owner deadline.
+
+`classify_work(kind, capability=...)` supplies a planning hint. Unknown work, shared screen/keyboard, native file choosers, modals and browser UI require exclusive sequential use. File analysis and server generation waits can run outside UI ownership. A `tab_id` alone does not prove parallel safety. A tab API is only a parallel *candidate* after adapter identity, evidence, verification, and session/input/focus/dialog isolation claims. This library neither verifies host claims nor runs parallel browser calls; keep actual UI sequential until the adapter and environment are tested.
+
 The CLI returns JSON and exit code 2 on rejected/invalid requests. Read `ok`, `replay`, `owner.actor`, `owner.token`, and `active`. Acquiring a queue entry is not acquiring the resource. A replayed successful begin is **not** permission to perform the tool call again.
 
 ```sh
