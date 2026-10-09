@@ -2,10 +2,9 @@
 import concurrent.futures,hashlib,io,json,os,sqlite3,stat,subprocess,sys,tempfile,unittest,zipfile
 from pathlib import Path
 from unittest.mock import patch
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-import coordinator as core
-import package_release,release_files,verify_install,verify_backup
-from coordinator import Coordinator,Conflict
+from agent_browser_coordinator import coordinator as core
+from scripts import package_release,release_files,verify_install,verify_backup
+from agent_browser_coordinator.coordinator import Coordinator,Conflict
 ROOT=Path(__file__).resolve().parents[1]
 class Security(unittest.TestCase):
  def setUp(self):
@@ -15,7 +14,7 @@ class Security(unittest.TestCase):
  def sql(self,query):
   with sqlite3.connect(self.db) as c:return c.execute(query).fetchall()
  def cli(self,*args):
-  return subprocess.run([sys.executable,str(ROOT/'coordinator.py'),'--db',str(self.db),*args],capture_output=True,text=True,timeout=15,env=verify_install.minimal_environment())
+  return subprocess.run([sys.executable,str(ROOT/'src/agent_browser_coordinator/coordinator.py'),'--db',str(self.db),*args],capture_output=True,text=True,timeout=15,env=verify_install.minimal_environment())
  def test_unknown_payload_is_rejected_and_not_persisted(self):
   with self.assertRaises(Conflict):self.co.execute('acquire','bad-extra','worker',unneeded_private_value='synthetic-sensitive')
   self.assertEqual(self.sql('SELECT COUNT(*) FROM requests')[0][0],0)
@@ -158,14 +157,14 @@ class Security(unittest.TestCase):
   with patch.object(verify_install.subprocess,'run',return_value=subprocess.CompletedProcess([],0)) as run:verify_install.run(['synthetic'])
   self.assertEqual(run.call_args.kwargs['timeout'],120);self.assertEqual(set(run.call_args.kwargs['env']),{'PATH','LANG','LC_ALL'})
  def test_verification_rejects_optimized_python(self):
-  r=subprocess.run([sys.executable,'-O',str(ROOT/'validate_release.py')],capture_output=True,text=True,timeout=15)
+  r=subprocess.run([sys.executable,'-O','-m','scripts.validate_release'],capture_output=True,text=True,timeout=15)
   self.assertNotEqual(r.returncode,0)
  def test_release_gate_existing_output_exits_nonzero_without_overwrite(self):
   out=self.root/'existing';out.mkdir();marker=out/'keep';marker.write_text('preserve')
-  r=subprocess.run([sys.executable,str(ROOT/'release_gate.py'),'--output-dir',str(out)],capture_output=True,text=True,timeout=15,env=verify_install.minimal_environment())
+  r=subprocess.run([sys.executable,'-m','scripts.release_gate','--output-dir',str(out)],capture_output=True,text=True,timeout=15,env=verify_install.minimal_environment())
   self.assertNotEqual(r.returncode,0);self.assertFalse(json.loads(r.stdout)['ok']);self.assertEqual(marker.read_text(),'preserve')
  def test_release_gate_required_command_failure_propagates(self):
-  import release_gate
+  from scripts import release_gate
   with self.assertRaises(RuntimeError):release_gate.checked([sys.executable,'-c','raise SystemExit(7)'],self.root,timeout=10)
  def test_read_only_arguments_and_exponent_overflow_rejected(self):
   for args in ['{"unused":"synthetic"}','{"unused":1e999}','{"unused":[{"nested":-1e999}]}']:

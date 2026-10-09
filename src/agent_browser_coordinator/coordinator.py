@@ -3,7 +3,7 @@
 import argparse, contextlib, html, json, math, os, re, sqlite3, stat, time, uuid
 from pathlib import Path
 
-VERSION = "0.3.4"
+VERSION = "0.3.5"
 MAX_CONTINUOUS_HOLD = 1800
 MAX_QUEUE_WAIT = 120
 REJECTION_HISTORY = 2000

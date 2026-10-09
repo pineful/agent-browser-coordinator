@@ -2,26 +2,29 @@
 
 Copy a sample into your agent. The first scope is isolated installation and verification. Use the second only after reviewing that result and separately choosing a real integration. The agent and host must support the required capabilities; a prompt does not establish host permissions or prove success.
 
+Fill both hash placeholders with the 64-character values from a trusted SHA256SUMS record for this exact release. Missing values or uncertain provenance must block execution and trigger clarification. A ZIP cannot embed its own final hash in its contents; use the separate release verification record.
+
 ## 1. Request installation and verification only
 
 ```text
-Install and verify Agent Browser Coordinator 0.3.4.
+Install and verify Agent Browser Coordinator 0.3.5.
 Repository: https://github.com/pineful/agent-browser-coordinator
-Exact release: https://github.com/pineful/agent-browser-coordinator/releases/tag/v0.3.4
+Exact release: https://github.com/pineful/agent-browser-coordinator/releases/tag/v0.3.5
 
 First check the host OS, Python version, and current filesystem, network, and software-execution permissions. Local validation used POSIX/Python 3.12; package metadata requires Python >=3.10. Check other environments and label unverified compatibility. Do not interpret this request as permission to access another computer or expand permissions.
 
 Identify existing coordinator code, databases, and browser sessions, and preserve them. Use a new dedicated directory and separate virtual environments. Read the tagged installation, LICENSE, NOTICE, SECURITY, limitation, and recovery documents first. main can change; do not execute different source just because its version label matches.
 
 Download these exact release assets and verify SHA-256 before execution, installation, or extraction:
-agent-browser-coordinator-0.3.4-source.zip
-07a6194893502a785c238a32362f12f9ec2b70554fc833d57d00e85c7d25521f
-agent_browser_coordinator-0.3.4-py3-none-any.whl
-e83c4bf37f752a2dbfaf02d43e30e03445a55daec84421568f4e44a6eba58c5a
+agent-browser-coordinator-0.3.5-source.zip
+<TRUSTED_SOURCE_ZIP_SHA256>
+agent_browser_coordinator-0.3.5-py3-none-any.whl
+<TRUSTED_WHEEL_SHA256>
+If a hash placeholder remains, do not execute; ask for the verified value.
 
 Establish trust in the delivery of this prompt and the release source as well. A checksum or manifest obtained alongside a download does not by itself establish authenticity. Stop and report a hash mismatch or an untrusted source. Restore source only into a new directory, rejecting symlinks, path traversal, and overwrites.
 
-Prepare a separate tooling virtual environment for the verified source. Obtain only its declared build dependencies from the official package registry as needed within existing permissions. Choose a nonexistent output directory under a trusted parent and run python release_gate.py --output-dir <new output directory>. The gate checks security regressions, synthetic ownership/recovery, source allowlisting, artifacts, fresh installation, and source restoration. Record success only if all stages exit 0 and the success report exists. Do not skip tests or relax failure conditions.
+Prepare a separate tooling virtual environment for the verified source. Obtain only its declared build dependencies from the official package registry as needed within existing permissions. Choose a nonexistent output directory under a trusted parent and run python -m scripts.release_gate --output-dir <new output directory>. The gate checks security regressions, synthetic ownership/recovery, source allowlisting, artifacts, fresh installation, and source restoration. Record success only if all stages exit 0 and the success report exists. Do not skip tests or relax failure conditions.
 
 Then install the hash-matched release wheel in a separate runtime virtual environment using --no-index --no-deps. From outside the source tree, verify the version, import, CLI, and synthetic acquire/begin/end/release sequence. Check that a missing database is not created automatically. Test databases must be temporary synthetic state only.
 
@@ -35,7 +38,7 @@ Report the actual environment, verified version/hashes, installation location, c
 Specify the host, shared resource, workers and actual wrappers, and allowed observation. Unfilled placeholders must trigger clarification, not an inferred live deployment.
 
 ```text
-Prepare and verify integration of the previously verified Agent Browser Coordinator 0.3.4.
+Prepare and verify integration of the previously verified Agent Browser Coordinator 0.3.5.
 Host and shared UI resource: <specify>
 Participating workers and actual tool wrappers: <specify>
 One absolute database path shared by all participants: <specify>

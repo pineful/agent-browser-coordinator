@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from pathlib import Path
-from coordinator import Coordinator, Conflict
+from agent_browser_coordinator.coordinator import Coordinator, Conflict
 
 class Review(unittest.TestCase):
     def setUp(self):

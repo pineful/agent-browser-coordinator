@@ -2,10 +2,10 @@
 """Verify a known backup into a NEW isolated folder. Never activates a resource."""
 import argparse,hashlib,io,json,stat,subprocess,sys,zipfile
 from pathlib import Path
-from release_files import no_symlink_path,new_directory,write_new,trusted_directory
-from verify_install import minimal_environment
-ROOT=Path(__file__).resolve().parent
-ALLOWED=set(json.loads((ROOT/'RELEASE_ALLOWLIST.json').read_text()))
+from .release_files import no_symlink_path,new_directory,write_new,trusted_directory
+from .verify_install import minimal_environment
+ROOT=Path(__file__).resolve().parents[1]
+ALLOWED=set(json.loads((ROOT/'config/release-allowlist.json').read_text()))
 BASE=ALLOWED
 OPTIONAL=set()
 def unique_object(pairs):
@@ -36,7 +36,7 @@ def restore(archive,expected,destination):
   path=dest/n;path.parent.mkdir(parents=True,exist_ok=True,mode=0o700);write_new(path,v)
  write_new(dest/'MANIFEST.json',json.dumps(manifest,indent=2).encode())
  results=[]
- commands=[['validate_release.py']]
+ commands=[['-m','scripts.validate_release']]
  for args in commands:
   r=subprocess.run([sys.executable,*args],cwd=dest,capture_output=True,text=True,timeout=120,env=minimal_environment())
   results.append(dict(command=args,returncode=r.returncode))

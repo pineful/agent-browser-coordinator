@@ -22,6 +22,6 @@ Different machines need a separately implemented trusted parent relay. There is 
 
 [Usage](USAGE.md) · [Limits](LIMITATIONS.md)
 
-## 0.3.4 file and input checks
+## 0.3.5 file and input checks
 
 Use physical paths without symlink components and a runtime parent that is not writable by group/others. The DB must be a regular file without hard-link aliases. Existing dashboard files are never overwritten; choose a new snapshot filename. JSON must have unique keys, finite numeric values, and only the documented arguments. Read-only commands reject argument payloads. These checks do not authenticate worker identities.

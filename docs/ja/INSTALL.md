@@ -15,9 +15,9 @@ python -m agent_browser_coordinator --version
 ソースのビルドには設定済み Python パッケージインデックスの Setuptools を使用します。オフラインでは、配布元と SHA-256 を検証した wheel を使用してください。
 
 ```sh
-python -m pip install --no-index --no-deps ./agent_browser_coordinator-0.3.4-py3-none-any.whl
-python validate_release.py
-python package_release.py
+python -m pip install --no-index --no-deps ./agent_browser_coordinator-0.3.5-py3-none-any.whl
+python -m scripts.validate_release
+python -m scripts.package_release
 ```
 
 後の二つの検証コマンドはソース checkout 内で実行します。PyPI への公開は主張していません。同名・類似名の別パッケージを代用しないでください。削除は `python -m pip uninstall agent-browser-coordinator` です。ワーカーの停止や稼働 DB の削除は別の作業です。

@@ -6,12 +6,12 @@ No publication, credentials, network upload, or production state is involved.
 """
 import argparse,hashlib,json,os,re,subprocess,sys,tarfile,tempfile,zipfile
 from pathlib import Path
-from coordinator import VERSION
-from release_files import safe_read,write_new,new_directory,no_symlink_path,trusted_directory
-from verify_install import minimal_environment,verify as verify_wheel
-from verify_backup import restore
-from scan_public_release import PATTERNS
-ROOT=Path(__file__).resolve().parent
+from agent_browser_coordinator import VERSION
+from .release_files import safe_read,write_new,new_directory,no_symlink_path,trusted_directory
+from .verify_install import minimal_environment,verify as verify_wheel
+from .verify_backup import restore
+from .scan_public_release import PATTERNS
+ROOT=Path(__file__).resolve().parents[1]
 
 def checked(command,cwd,timeout=180):
     env=minimal_environment();env['SOURCE_DATE_EPOCH']='1791504000'
@@ -61,8 +61,8 @@ def gate(output):
     if sys.flags.optimize:raise RuntimeError('Do not run release checks with optimization')
     output=no_symlink_path(output);trusted_directory(output.parent)
     if os.path.lexists(output):raise ValueError('Release output directory must not exist')
-    validation=checked([sys.executable,'validate_release.py'],ROOT)
-    source_names=json.loads(safe_read(ROOT,'RELEASE_ALLOWLIST.json'))
+    validation=checked([sys.executable,'-m','scripts.validate_release'],ROOT)
+    source_names=json.loads(safe_read(ROOT,'config/release-allowlist.json'))
     if len(source_names)!=len(set(source_names)):raise ValueError('Duplicate allowlist entry')
     sources={n:safe_read(ROOT,n) for n in source_names}
     new_directory(output)
@@ -72,7 +72,7 @@ def gate(output):
             p=stage/name;p.parent.mkdir(parents=True,exist_ok=True,mode=0o700);write_new(p,data)
         checked([sys.executable,'-m','pip','--isolated','--no-cache-dir','wheel','--no-index','--no-deps','--no-build-isolation','--wheel-dir',str(output),'.'],stage)
         checked([sys.executable,'-c','from setuptools import build_meta; build_meta.build_sdist('+repr(str(output))+')'],stage)
-        checked([sys.executable,'package_release.py','--output-dir',str(output)],stage)
+        checked([sys.executable,'-m','scripts.package_release','--output-dir',str(output)],stage)
         wheel=output/('agent_browser_coordinator-'+VERSION+'-py3-none-any.whl')
         sdist=output/('agent_browser_coordinator-'+VERSION+'.tar.gz')
         source_zip=output/('agent-browser-coordinator-'+VERSION+'-source.zip')

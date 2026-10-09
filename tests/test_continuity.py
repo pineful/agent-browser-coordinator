@@ -1,7 +1,6 @@
 import concurrent.futures,json,sqlite3,sys,tempfile,unittest
 from pathlib import Path
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from coordinator import Coordinator,Conflict,MAX_CONTINUOUS_HOLD,MAX_QUEUE_WAIT
+from agent_browser_coordinator.coordinator import Coordinator,Conflict,MAX_CONTINUOUS_HOLD,MAX_QUEUE_WAIT
 
 class Continuity(unittest.TestCase):
  def setUp(self):

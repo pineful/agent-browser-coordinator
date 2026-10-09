@@ -21,7 +21,7 @@ co = Coordinator("/absolute/path/to/existing-shared.db")
 snapshot = co.status()  # read-only; missing DB is not created
 ```
 
-완전한 합성 흐름은 `python examples/safe_mock_worker.py`, 두 작업자 양도는 `python demo.py`로 실행합니다. 실제 브라우저는 호출하지 않습니다.
+완전한 합성 흐름은 `python examples/safe_mock_worker.py`, 두 작업자 양도는 `python examples/two_workers.py`로 실행합니다. 실제 브라우저는 호출하지 않습니다.
 
 호출이 모두 끝난 안전 지점에서 체크포인트를 남기고 양도합니다.
 

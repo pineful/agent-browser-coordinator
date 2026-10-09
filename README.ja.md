@@ -12,9 +12,20 @@
 
 ## 含まれる機能
 
-**0.3.4** は Python ライブラリーと CLI です。一つのローカル SQLite DB、原子的な所有権、優先度と待ち時間、世代ごとのフェンシングトークン、一意の要求 ID、begin/end、タブ保持記録、検証後の復旧を提供します。外部ランタイム依存はありません。すべてのツールラッパーが手順に参加する必要があり、直接呼び出しを強制的には遮断しません。
+**0.3.5** は Python ライブラリーと CLI です。一つのローカル SQLite DB、原子的な所有権、優先度と待ち時間、世代ごとのフェンシングトークン、一意の要求 ID、begin/end、タブ保持記録、検証後の復旧を提供します。外部ランタイム依存はありません。すべてのツールラッパーが手順に参加する必要があり、直接呼び出しを強制的には遮断しません。
 
 ブラウザードライバー、ログイン、サービスアカウント、daemon、自動メッセージ送信、実際の稼働状態は含みません。実験中の v0.4 所有者問い合わせ/keepalive は**この配布には含めず、有効化もしません**。ホストのタスク寿命と timeout の統合検証が必要です。
+
+## フォルダー構成
+
+- `src/agent_browser_coordinator/`: 唯一の実装とCLI
+- `tests/`: 機能・セキュリティ回帰、`tests/reviews/`: 独立検証の回帰
+- `scripts/`: 検証・ビルド・配布・復元ツール
+- `examples/`: 実際のUIを操作しない使用例
+- `docs/`: 韓国語・英語・日本語の手順と検証記録
+- `config/`: 公開ファイル許可リスト
+
+開発・配布用コマンドはリポジトリのルートで、例として`python -m scripts.release_gate --output-dir dist/new-reviewed-release`を実行します。ルートに重複した実装は置きません。
 
 ## はじめに
 
@@ -31,11 +42,11 @@ python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install .
 agent-browser-coordinator --version
-python demo.py
+python examples/two_workers.py
 ```
 
 demo は合成ワーカーと一時状態だけを使い、ブラウザーを開きません。実際のツールを接続する前に初期化と復旧の前提条件を確認してください。所有権の取得は外部への送信・公開などの許可ではありません。
 
 [MIT ライセンス](LICENSE)。[ソースとライセンス](NOTICE.md)も参照してください。
 
-[公開前のセキュリティ検証と必須リリースゲート](SECURITY_REVIEW.md)
+[公開前のセキュリティ検証と必須リリースゲート](docs/SECURITY_REVIEW.md)

@@ -24,7 +24,7 @@ co = Coordinator("/absolute/path/to/existing-shared.db")
 snapshot = co.status()  # Read-only; never creates a missing DB.
 ```
 
-Run `python examples/safe_mock_worker.py` for a complete disposable mock flow. `python demo.py` demonstrates two workers and safe priority handoff. Neither invokes a browser.
+Run `python examples/safe_mock_worker.py` for a complete disposable mock flow. `python examples/two_workers.py` demonstrates two workers and safe priority handoff. Neither invokes a browser.
 
 At a verified safe point:
 

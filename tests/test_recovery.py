@@ -1,8 +1,7 @@
 import hashlib,json,sys,tempfile,unittest,zipfile
 from pathlib import Path
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from coordinator import Coordinator,Conflict
-from verify_backup import restore
+from agent_browser_coordinator.coordinator import Coordinator,Conflict
+from scripts.verify_backup import restore
 class RecoveryTests(unittest.TestCase):
  def test_missing_db_never_implies_idle(self):
   import sqlite3

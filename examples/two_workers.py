@@ -2,7 +2,9 @@
 """Two independent mock workers; no browser calls or external state changes."""
 import json, multiprocessing as mp, tempfile, time
 from pathlib import Path
-from coordinator import Coordinator
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
+from agent_browser_coordinator import Coordinator
 
 def worker(db, name, start, queued, done):
  c=Coordinator(db); n=0

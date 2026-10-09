@@ -2,10 +2,10 @@
 """Build an explicitly allowlisted source archive; never overwrite existing files."""
 import argparse,hashlib,io,json,os,stat,zipfile
 from pathlib import Path
-from coordinator import VERSION
-from release_files import safe_read,write_new,new_directory,trusted_directory,no_symlink_path
-ROOT=Path(__file__).resolve().parent
-FILES=json.loads((ROOT/'RELEASE_ALLOWLIST.json').read_text())
+from agent_browser_coordinator import VERSION
+from .release_files import safe_read,write_new,new_directory,trusted_directory,no_symlink_path
+ROOT=Path(__file__).resolve().parents[1]
+FILES=json.loads((ROOT/'config/release-allowlist.json').read_text())
 def build(output_dir):
     if len(FILES)!=len(set(FILES)):raise ValueError('Duplicate release path')
     payload={name:safe_read(ROOT,name) for name in FILES}

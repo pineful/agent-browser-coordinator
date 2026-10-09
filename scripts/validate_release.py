@@ -2,9 +2,9 @@
 """Run only disposable synthetic tests; never discovers a runtime database."""
 import json,re,subprocess,sys
 from pathlib import Path
-from verify_install import minimal_environment
-ROOT=Path(__file__).resolve().parent
-COMMANDS=[['-m','unittest','discover','-s','tests','-v'],['reviewer_test.py'],['reviewer_continuity_test.py'],['review_recovery_test.py'],['demo.py'],['examples/safe_mock_worker.py'],['scan_public_release.py']]
+from .verify_install import minimal_environment
+ROOT=Path(__file__).resolve().parents[1]
+COMMANDS=[['-m','unittest','discover','-s','tests','-t','.','-v'],['examples/two_workers.py'],['examples/safe_mock_worker.py'],['-m','scripts.scan_public_release']]
 def main():
     if sys.flags.optimize: raise RuntimeError("Do not disable verification assertions")
     results=[]

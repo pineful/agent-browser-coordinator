@@ -2,26 +2,29 @@
 
 아래 예제를 복사해 사용하는 에이전트에게 전달하세요. 첫 번째는 격리 설치와 검사까지입니다. 두 번째는 설치 결과를 검토한 뒤 실제 도구 연결을 별도로 요청할 때 사용합니다. 에이전트와 호스트가 필요한 기능을 지원해야 하며, 프롬프트 자체가 설치 성공이나 호스트 권한을 보장하지는 않습니다.
 
+해시 두 칸은 해당 릴리스의 신뢰할 수 있는 SHA256SUMS 기록과 대조해 64자리 값으로 채우세요. 값이 없거나 출처를 확인할 수 없으면 실행하지 말고 확인을 요청하도록 예제에 명시했습니다. ZIP 자신의 해시를 ZIP 내부 문서에 넣을 수는 없으므로 릴리스의 별도 검증 기록을 사용합니다.
+
 ## 1. 설치와 검증만 요청하기
 
 ```text
-Agent Browser Coordinator 0.3.4를 설치하고 검증해줘.
+Agent Browser Coordinator 0.3.5를 설치하고 검증해줘.
 저장소: https://github.com/pineful/agent-browser-coordinator
-정확한 릴리스: https://github.com/pineful/agent-browser-coordinator/releases/tag/v0.3.4
+정확한 릴리스: https://github.com/pineful/agent-browser-coordinator/releases/tag/v0.3.5
 
 진행 전에 현재 호스트 OS, Python 버전, 파일 쓰기·네트워크·소프트웨어 실행 권한을 확인해줘. 현재 검증 환경은 POSIX/Python 3.12이며 패키지 선언은 Python >=3.10이다. 다른 환경은 실제 지원 여부를 확인하고 미검증으로 구별해줘. 이 요청을 다른 컴퓨터에 접근하거나 권한을 확대하는 승인으로 해석하지 마.
 
 기존 coordinator 코드·DB·브라우저 세션을 먼저 식별하고 변경하지 마. 새 전용 폴더와 별도 가상환경을 사용해. 태그의 문서와 LICENSE, NOTICE, SECURITY, 제한·복구 문서를 먼저 읽어줘. main은 이후 바뀔 수 있으므로 버전 이름만 믿고 다른 소스를 실행하지 마.
 
 릴리스의 아래 두 파일을 다운로드하고 실행·설치·압축 해제 전에 SHA-256을 확인해줘.
-agent-browser-coordinator-0.3.4-source.zip
-07a6194893502a785c238a32362f12f9ec2b70554fc833d57d00e85c7d25521f
-agent_browser_coordinator-0.3.4-py3-none-any.whl
-e83c4bf37f752a2dbfaf02d43e30e03445a55daec84421568f4e44a6eba58c5a
+agent-browser-coordinator-0.3.5-source.zip
+<TRUSTED_SOURCE_ZIP_SHA256>
+agent_browser_coordinator-0.3.5-py3-none-any.whl
+<TRUSTED_WHEEL_SHA256>
+해시 자리표시자가 남아 있으면 실행하지 말고 확인을 요청해줘.
 
 이 프롬프트의 신뢰할 수 있는 전달 경로와 릴리스의 출처도 확인해줘. 같은 다운로드에 있는 checksum이나 manifest만으로 출처의 신뢰성이 증명되지는 않는다. 해시가 다르거나 출처를 신뢰할 수 없으면 실행을 멈추고 알려줘. 심볼릭 링크·경로 탈출·기존 파일 덮어쓰기 없이 새 폴더에만 소스를 복원해줘.
 
-검증된 소스에서 별도 도구용 가상환경을 준비하고, 공식 패키지 저장소의 선언된 빌드 의존성만 필요한 범위에서 설치해줘. 신뢰할 수 있는 부모 아래 아직 없는 출력 경로를 정한 뒤 python release_gate.py --output-dir <새 출력 경로>를 실행해. 이 명령은 보안 회귀, 합성 점유·복구, 파일 허용목록, 산출물, 새 환경 설치와 소스 복원을 검사한다. 모든 단계가 exit 0이고 성공 보고서가 생성돼야 통과로 기록해줘. 테스트를 생략하거나 실패 조건을 완화하지 마.
+검증된 소스에서 별도 도구용 가상환경을 준비하고, 공식 패키지 저장소의 선언된 빌드 의존성만 필요한 범위에서 설치해줘. 신뢰할 수 있는 부모 아래 아직 없는 출력 경로를 정한 뒤 python -m scripts.release_gate --output-dir <새 출력 경로>를 실행해. 이 명령은 보안 회귀, 합성 점유·복구, 파일 허용목록, 산출물, 새 환경 설치와 소스 복원을 검사한다. 모든 단계가 exit 0이고 성공 보고서가 생성돼야 통과로 기록해줘. 테스트를 생략하거나 실패 조건을 완화하지 마.
 
 그 다음, SHA가 일치한 릴리스 wheel을 별도 실행용 가상환경에 --no-index --no-deps로 설치하고 소스 폴더 밖에서 버전, import, CLI, 합성 acquire/begin/end/release를 확인해줘. 누락된 DB가 자동 생성되지 않는지도 확인해줘. 검사에 필요한 DB는 임시 합성 상태만 써.
 
@@ -35,7 +38,7 @@ e83c4bf37f752a2dbfaf02d43e30e03445a55daec84421568f4e44a6eba58c5a
 먼저 대상 호스트·공유 자원·기존 작업자와 도구 래퍼·허용된 관찰 작업을 직접 지정하세요. 빈칸이 남으면 에이전트가 추측해서 운영을 시작하지 않게 하세요.
 
 ```text
-앞서 검증한 Agent Browser Coordinator 0.3.4를 다음 환경에 연결하는 계획과 검증을 진행해줘.
+앞서 검증한 Agent Browser Coordinator 0.3.5를 다음 환경에 연결하는 계획과 검증을 진행해줘.
 호스트와 공유 UI 자원: <지정>
 참여 작업자와 실제 도구 래퍼: <지정>
 모두가 사용할 단일 절대 DB 경로: <지정>

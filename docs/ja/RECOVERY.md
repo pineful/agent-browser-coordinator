@@ -8,7 +8,7 @@
 
 ## 期限切れ・停止した所有者
 
-安定版 0.3.4 は期限切れだけで所有権を自動回収しません。運用者が新規送信を停止し、freeze 後に正確な revision、owner token、shutdown token を読みます。
+安定版 0.3.5 は期限切れだけで所有権を自動回収しません。運用者が新規送信を停止し、freeze 後に正確な revision、owner token、shutdown token を読みます。
 
 ```sh
 agent-browser-coordinator --db "$ABC_DB" freeze --actor coordinator-operator   --request freeze-001
@@ -23,7 +23,7 @@ agent-browser-coordinator --db "$ABC_DB" status
 
 ## ソースや DB の喪失
 
-信頼できるリリースを新しい空ディレクトリに復元します。`python verify_backup.py ARCHIVE --sha256 EXPECTED_SHA256 --destination NEW_DIRECTORY` は信頼できる別記録のハッシュ、正確な許可リスト、各ファイルのハッシュを展開前に確認し、合成テストを実行します。既存の復元先は拒否します。稼働 DB は同梱・有効化しません。
+信頼できるリリースを新しい空ディレクトリに復元します。`python -m scripts.verify_backup ARCHIVE --sha256 EXPECTED_SHA256 --destination NEW_DIRECTORY` は信頼できる別記録のハッシュ、正確な許可リスト、各ファイルのハッシュを展開前に確認し、合成テストを実行します。既存の復元先は拒否します。稼働 DB は同梱・有効化しません。
 
 元の DB が正常なら保持します。稼働中の DB/WAL/SHM をコピー・置換しません。DB が欠落・信頼不能なら、全ワーカーの停止と実呼び出し終了後にのみ新 DB/epoch を明示決定します。inventory 未確認で開始し、旧許可を破棄し、一つのゲートで実画面・結果を確認してから再取得を許可します。ソース復元はセッション復元ではありません。
 

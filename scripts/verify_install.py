@@ -6,9 +6,9 @@ This is environment isolation, not a sandbox for untrusted package code.
 import argparse,hashlib,io,json,os,re,subprocess,sys,tempfile,zipfile
 from email.parser import BytesParser
 from pathlib import Path
-from coordinator import VERSION
-from release_files import safe_read
-ROOT=Path(__file__).resolve().parent
+from agent_browser_coordinator import VERSION
+from .release_files import safe_read
+ROOT=Path(__file__).resolve().parents[1]
 SMOKE='''import json,tempfile
 from pathlib import Path
 import agent_browser_coordinator as package

@@ -15,7 +15,7 @@ python -m agent_browser_coordinator --version
 The source build uses Setuptools from the configured Python package index. For an offline installation, use a verified release wheel:
 
 ```sh
-python -m pip install --no-index --no-deps ./agent_browser_coordinator-0.3.4-py3-none-any.whl
+python -m pip install --no-index --no-deps ./agent_browser_coordinator-0.3.5-py3-none-any.whl
 ```
 
 This document does not claim a PyPI publication. Do not run an unrelated similarly named index package. Verify the actual repository/release identity and SHA-256 first. To remove the installed package: `python -m pip uninstall agent-browser-coordinator`. Removing a package does not stop workers or delete runtime state.
@@ -23,8 +23,8 @@ This document does not claim a PyPI publication. Do not run an unrelated similar
 From a source checkout, run the synthetic checks:
 
 ```sh
-python validate_release.py
-python package_release.py
+python -m scripts.validate_release
+python -m scripts.package_release
 ```
 
 [Configuration](CONFIGURATION.md) · [Usage](USAGE.md) · [Recovery](RECOVERY.md)

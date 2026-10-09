@@ -11,8 +11,8 @@ import warnings
 import zipfile
 from pathlib import Path
 from unittest.mock import patch
-from coordinator import Coordinator, Conflict
-import verify_backup as recovery
+from agent_browser_coordinator.coordinator import Coordinator, Conflict
+from scripts import verify_backup as recovery
 
 class ReviewRecovery(unittest.TestCase):
     def setUp(self):

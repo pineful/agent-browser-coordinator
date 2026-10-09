@@ -1,7 +1,6 @@
 import sys,tempfile,unittest,json
 from pathlib import Path
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from coordinator import Coordinator,Conflict
+from agent_browser_coordinator.coordinator import Coordinator,Conflict
 class Diagnostic(unittest.TestCase):
  def setUp(self):
   self.t=tempfile.TemporaryDirectory();self.now=[1000.];self.c=Coordinator(Path(self.t.name)/'fixture.db',lambda:self.now[0]);self.c.initialize('mock',True);self.i=0

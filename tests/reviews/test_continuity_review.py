@@ -6,8 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-import coordinator as mod
-from coordinator import Coordinator, Conflict, MAX_CONTINUOUS_HOLD, MAX_QUEUE_WAIT, REJECTION_HISTORY
+from agent_browser_coordinator import coordinator as mod
+from agent_browser_coordinator.coordinator import Coordinator, Conflict, MAX_CONTINUOUS_HOLD, MAX_QUEUE_WAIT, REJECTION_HISTORY
 
 class ContinuityReview(unittest.TestCase):
     def setUp(self):

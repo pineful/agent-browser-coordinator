@@ -15,9 +15,9 @@ python -m agent_browser_coordinator --version
 소스 빌드에는 설정된 Python 패키지 저장소의 Setuptools를 사용합니다. 오프라인 설치는 출처와 SHA-256을 확인한 릴리스 wheel을 사용합니다.
 
 ```sh
-python -m pip install --no-index --no-deps ./agent_browser_coordinator-0.3.4-py3-none-any.whl
-python validate_release.py
-python package_release.py
+python -m pip install --no-index --no-deps ./agent_browser_coordinator-0.3.5-py3-none-any.whl
+python -m scripts.validate_release
+python -m scripts.package_release
 ```
 
 아래 두 검증 명령은 소스 checkout에서 실행합니다. PyPI에 게시됐다고 주장하지 않으므로 비슷한 이름의 다른 패키지를 대신 설치하지 마세요. 제거는 `python -m pip uninstall agent-browser-coordinator`이며 작업자 중지·운영 DB 삭제는 별도입니다.

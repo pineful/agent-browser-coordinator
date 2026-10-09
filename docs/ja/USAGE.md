@@ -21,7 +21,7 @@ co = Coordinator("/absolute/path/to/existing-shared.db")
 snapshot = co.status()  # read-only; missing DB is not created
 ```
 
-`python examples/safe_mock_worker.py` は一時 DB の完全な模擬フロー、`python demo.py` は二つのワーカーの引き継ぎです。どちらもブラウザーを操作しません。
+`python examples/safe_mock_worker.py` は一時 DB の完全な模擬フロー、`python examples/two_workers.py` は二つのワーカーの引き継ぎです。どちらもブラウザーを操作しません。
 
 呼び出しが終わった安全な地点で checkpoint を残して引き継ぎます。
 

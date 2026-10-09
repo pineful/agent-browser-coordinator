@@ -6,7 +6,7 @@ A human must review every changed allowlisted file before publishing.
 """
 import json,re
 from pathlib import Path
-ROOT=Path(__file__).resolve().parent
+ROOT=Path(__file__).resolve().parents[1]
 PATTERNS={
     'private_workspace': re.compile('/work'+'space/(?:scratch|shared)/'),
     'home_path':re.compile('/(?:home|Users|root)/[A-Za-z0-9_.-]+/'),
@@ -19,7 +19,7 @@ PATTERNS={
     'bearer_value':re.compile('Bearer '+'[A-Za-z0-9._-]{24,}'),
 }
 def main():
-    names=json.loads((ROOT/'RELEASE_ALLOWLIST.json').read_text());errors=[]
+    names=json.loads((ROOT/'config/release-allowlist.json').read_text());errors=[]
     if len(names)!=len(set(names)):errors.append('duplicate allowlist path')
     for n in names:
         p=ROOT/n

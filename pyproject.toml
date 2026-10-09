@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-browser-coordinator"
-version = "0.3.4"
+version = "0.3.5"
 description = "Cooperative ownership and safe handoff for agents sharing a browser UI"
 readme = "README.md"
 requires-python = ">=3.10"

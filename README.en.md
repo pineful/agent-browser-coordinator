@@ -12,9 +12,20 @@ This is a conservative one-resource policy for a shared UI. It does not claim th
 
 ## What is included
 
-Version **0.3.4** provides a Python library and CLI with one local SQLite database, atomic ownership, priority/aging, unique request IDs, generation tokens, begin/end tracking, tab retention, and explicit verified recovery. It has no third-party runtime dependency. Every participating tool wrapper must use the coordinator; direct calls are not forcibly blocked.
+Version **0.3.5** provides a Python library and CLI with one local SQLite database, atomic ownership, priority/aging, unique request IDs, generation tokens, begin/end tracking, tab retention, and explicit verified recovery. It has no third-party runtime dependency. Every participating tool wrapper must use the coordinator; direct calls are not forcibly blocked.
 
 No browser driver, login, service account, daemon, automatic task messaging, or live state is included. The experimental v0.4 owner-message/keepalive work is **not shipped or activated** here. It still needs host lifecycle and timeout integration.
+
+## Repository layout
+
+- `src/agent_browser_coordinator/`: one canonical runtime implementation and CLI
+- `tests/`: functional/security regressions; `tests/reviews/`: independent-review regressions
+- `scripts/`: validation, build, packaging, and restoration tooling
+- `examples/`: mock usage without real UI calls
+- `docs/`: Korean, English, and Japanese guides and review records
+- `config/`: public release allowlist
+
+Run development/release tools from the repository root, for example `python -m scripts.release_gate --output-dir dist/new-reviewed-release`. No duplicate implementation is kept at the root.
 
 ## Start here
 
@@ -31,11 +42,11 @@ python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install .
 agent-browser-coordinator --version
-python demo.py
+python examples/two_workers.py
 ```
 
 The demo uses only synthetic workers and temporary state; it does not open a browser. Read the initialization and recovery preconditions before connecting real tools. A successful ownership grant never grants permission for an external action.
 
 [MIT license](LICENSE). See [source and licensing](NOTICE.md).
 
-[Pre-release security review and mandatory release gate](SECURITY_REVIEW.md)
+[Pre-release security review and mandatory release gate](docs/SECURITY_REVIEW.md)

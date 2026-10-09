@@ -21,4 +21,4 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m pip install --upgrade 'setuptools>=77.0.3' wheel
       - run: mkdir -p -m 700 dist
-      - run: python release_gate.py --output-dir dist/ci-reviewed
+      - run: python -m scripts.release_gate --output-dir dist/ci-reviewed

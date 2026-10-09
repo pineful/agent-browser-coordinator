@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.5 — repository hierarchy and reproducible review checks
+
+- Keep the implementation only in src/agent_browser_coordinator; remove the root import shim.
+- Group release tooling under scripts, examples under examples, and review regressions under tests/reviews.
+- Store the release allowlist in config and security review in docs.
+- Update module commands, package manifests, three-language guides, and installation prompts.
+- Include the twelve additional independent artifact/input checks in the mandatory 161-test gate.
+- Preserve the immutable 0.3.4 release and its artifacts; runtime behavior is unchanged apart from the reported version.
+
 ## Repository documentation update after 0.3.4
 
 - Make Korean the default README and move the English introduction to README.en.md.

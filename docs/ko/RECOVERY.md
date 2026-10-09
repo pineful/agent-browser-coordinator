@@ -8,7 +8,7 @@
 
 ## 만료·중단 소유자
 
-안정판 0.3.4은 만료만으로 점유를 자동 회수하지 않습니다. 운영자가 신규 제출을 중단시키고 freeze한 뒤 정확한 revision, owner token, shutdown token을 읽습니다.
+안정판 0.3.5은 만료만으로 점유를 자동 회수하지 않습니다. 운영자가 신규 제출을 중단시키고 freeze한 뒤 정확한 revision, owner token, shutdown token을 읽습니다.
 
 ```sh
 agent-browser-coordinator --db "$ABC_DB" freeze --actor coordinator-operator   --request freeze-001
@@ -23,7 +23,7 @@ agent-browser-coordinator --db "$ABC_DB" status
 
 ## 소스·DB 분실
 
-신뢰 가능한 릴리스를 새 빈 폴더로 복원합니다. `python verify_backup.py ARCHIVE --sha256 EXPECTED_SHA256 --destination NEW_DIRECTORY`는 신뢰할 수 있는 별도 해시, 정확한 허용목록, 각 파일 해시를 추출 전에 확인하고 합성 시험을 실행합니다. 기존 목적지는 거절합니다. DB를 포함하거나 활성화하지 않습니다.
+신뢰 가능한 릴리스를 새 빈 폴더로 복원합니다. `python -m scripts.verify_backup ARCHIVE --sha256 EXPECTED_SHA256 --destination NEW_DIRECTORY`는 신뢰할 수 있는 별도 해시, 정확한 허용목록, 각 파일 해시를 추출 전에 확인하고 합성 시험을 실행합니다. 기존 목적지는 거절합니다. DB를 포함하거나 활성화하지 않습니다.
 
 기존 DB가 정상이면 그대로 사용합니다. 실행 중 DB/WAL/SHM을 복사·교체하지 않습니다. DB가 없거나 신뢰할 수 없을 때는 모든 작업자 중지·실제 미결 종료 후에만 새 DB/epoch를 명시 결정합니다. inventory는 미확인으로 시작하고 옛 허가를 폐기한 뒤 단일 게이트로 실제 화면·결과를 읽고 작업자가 새 점유를 얻도록 합니다. 코드 복원은 세션 복원이 아닙니다.
 

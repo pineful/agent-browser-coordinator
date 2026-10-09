@@ -1,4 +1,6 @@
-# Pre-release security review — 0.3.4
+# Security review and regression coverage — 0.3.5
+
+The 0.3.4 independent review passed its 149 included tests and 12 additional adversarial checks. Version 0.3.5 incorporates those 12 checks into the repository suite (161 total), reorganizes the tooling, and reruns the complete release gate. This does not imply a new security certification.
 
 This review is scoped to a cooperative coordinator used by trusted processes on one local filesystem. It is not a security certification. Tests do not prove the absence of every defect or enforce the behavior of a browser/server.
 
@@ -28,7 +30,7 @@ The secret-pattern scan covers explicit release paths and built archives; it is 
 ## Mandatory release command
 
 ```sh
-python release_gate.py --output-dir dist/new-reviewed-release
+python -m scripts.release_gate --output-dir dist/new-reviewed-release
 ```
 
 The parent `dist` directory must already exist and be trusted. The output directory must not exist. Any failed functional/security test, scan, build, wheel installation or source restoration returns a nonzero exit code and does not produce a successful RELEASE_VALIDATION.json. Publish only artifacts from a completed gate, then verify the actual remote commit and artifact bytes.
